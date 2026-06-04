@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/weather_provider.dart';
+import '../providers/field_provider.dart';
 import '../providers/task_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../models/task_model.dart';
+import '../models/field_model.dart';
 import 'weather_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -15,12 +17,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _lastFieldCount = -1;
+  FieldProvider? _fieldProvider;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WeatherProvider>().loadWeather();
+      if (!mounted) return;
+      _fieldProvider = context.read<FieldProvider>();
+      _lastFieldCount = _fieldProvider!.fields.length;
+      _fieldProvider!.addListener(_onFieldsChanged);
+      _refreshHomeWeather(context);
     });
+  }
+
+  @override
+  void dispose() {
+    _fieldProvider?.removeListener(_onFieldsChanged);
+    super.dispose();
+  }
+
+  void _onFieldsChanged() {
+    if (!mounted || _fieldProvider == null) return;
+    final count = _fieldProvider!.fields.length;
+    if (count == _lastFieldCount) return;
+    _lastFieldCount = count;
+    _refreshHomeWeather(context);
   }
 
   @override
@@ -28,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F5),
       body: RefreshIndicator(
-        onRefresh: () => context.read<WeatherProvider>().loadWeather(),
+        onRefresh: () async => _refreshHomeWeather(context),
         color: const Color(0xFF2E7D32),
         child: CustomScrollView(
           slivers: [
@@ -58,6 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _refreshHomeWeather(BuildContext context) {
+    final fields = context.read<FieldProvider>().fields;
+    context.read<WeatherProvider>().loadWeatherForHome(fields);
   }
 
   SliverAppBar _buildAppBar(BuildContext context) {
@@ -121,46 +149,90 @@ class _HomeScreenState extends State<HomeScreen> {
 class _WeatherCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<WeatherProvider>(
-      builder: (context, provider, _) {
-        if (provider.status == WeatherStatus.loading) {
-          return _buildLoadingCard();
+    return Consumer2<FieldProvider, WeatherProvider>(
+      builder: (context, fieldProvider, weatherProvider, _) {
+        final fields = fieldProvider.fields;
+        if (weatherProvider.status == WeatherStatus.initial ||
+            weatherProvider.status == WeatherStatus.loading) {
+          return _buildLoadingCard(fields);
         }
-        if (provider.status == WeatherStatus.error ||
-            provider.currentWeather == null) {
-          return _buildErrorCard(context, provider);
+        if (weatherProvider.status == WeatherStatus.error ||
+            weatherProvider.currentWeather == null) {
+          return _buildErrorCard(context, weatherProvider, fields);
         }
-        return _buildWeatherCard(context, provider);
+        return _buildWeatherCard(
+            context, weatherProvider, fields);
       },
     );
   }
 
-  Widget _buildLoadingCard() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: const SizedBox(
-        height: 120,
-        child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF2E7D32)),
+  Widget _buildLoadingCard(List<Field> fields) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
         ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (fields.isNotEmpty) ...[
+            _HomeFieldSelector(
+              fields: fields,
+              selectedFieldId: null,
+              enabled: false,
+              onSelect: (_) {},
+            ),
+            const SizedBox(height: 16),
+          ],
+          const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Hava durumu yükleniyor...',
+            style: TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildErrorCard(BuildContext context, WeatherProvider provider) {
+  Widget _buildErrorCard(
+      BuildContext context, WeatherProvider provider, List<Field> fields) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            if (fields.isNotEmpty)
+              _HomeFieldSelector(
+                fields: fields,
+                selectedFieldId: provider.selectedFieldId,
+                onSelect: (f) => provider.selectHomeField(f),
+              ),
+            if (fields.isNotEmpty) const SizedBox(height: 12),
             const Icon(Icons.cloud_off, size: 40, color: Colors.grey),
             const SizedBox(height: 8),
-            const Text('Hava durumu alınamadı',
-                style: TextStyle(color: Colors.grey)),
+            Text(
+              provider.errorMessage.isNotEmpty
+                  ? provider.errorMessage
+                  : 'Hava durumu alınamadı',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 4),
             TextButton(
-              onPressed: () => provider.loadWeather(),
+              onPressed: () {
+                final fields = context.read<FieldProvider>().fields;
+                provider.loadWeatherForHome(fields);
+              },
               child: const Text('Tekrar Dene'),
             ),
           ],
@@ -169,68 +241,92 @@ class _WeatherCard extends StatelessWidget {
     );
   }
 
-  Widget _buildWeatherCard(BuildContext context, WeatherProvider provider) {
+  Widget _buildWeatherCard(
+      BuildContext context, WeatherProvider provider, List<Field> fields) {
     final weather = provider.currentWeather!;
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const WeatherScreen()),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
-          ),
+    final locationLabel = provider.homeFieldName != null
+        ? '${provider.homeFieldName} · ${weather.cityName}'
+        : weather.cityName;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1565C0), Color(0xFF42A5F5)],
         ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (fields.isNotEmpty)
+            _HomeFieldSelector(
+              fields: fields,
+              selectedFieldId: provider.selectedFieldId,
+              onSelect: (f) => provider.selectHomeField(f),
+            ),
+          if (fields.isNotEmpty) const SizedBox(height: 14),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WeatherScreen()),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on,
-                            color: Colors.white70, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          weather.cityName,
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${weather.temperature.toStringAsFixed(0)}°C',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                provider.homeFieldName != null
+                                    ? Icons.grass
+                                    : Icons.location_on,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  locationLabel,
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 14),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${weather.temperature.toStringAsFixed(0)}°C',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            weather.description.toUpperCase(),
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 13),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      weather.description.toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 13),
+                    Image.network(
+                      weather.iconUrl,
+                      width: 80,
+                      height: 80,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.wb_sunny,
+                          size: 60, color: Colors.white),
                     ),
                   ],
                 ),
-                Image.network(
-                  weather.iconUrl,
-                  width: 80,
-                  height: 80,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.wb_sunny, size: 60, color: Colors.white),
-                ),
-              ],
-            ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -249,9 +345,105 @@ class _WeatherCard extends StatelessWidget {
                     value: '${weather.windSpeed.toStringAsFixed(1)} m/s'),
               ],
             ),
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+/// Ana sayfa hava kartında tarla seçimi (Tarla1, Tarla2, …).
+class _HomeFieldSelector extends StatelessWidget {
+  final List<Field> fields;
+  final String? selectedFieldId;
+  final ValueChanged<Field> onSelect;
+  final bool enabled;
+
+  const _HomeFieldSelector({
+    required this.fields,
+    required this.selectedFieldId,
+    required this.onSelect,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Tarla seçin',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 36,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: fields.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final field = fields[index];
+              final selected = field.id == selectedFieldId;
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: enabled ? () => onSelect(field) : null,
+                  borderRadius: BorderRadius.circular(20),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: selected
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.5),
+                        width: selected ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.grass,
+                          size: 16,
+                          color: selected
+                              ? const Color(0xFF1565C0)
+                              : Colors.white,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          field.name,
+                          style: TextStyle(
+                            color: selected
+                                ? const Color(0xFF1565C0)
+                                : Colors.white,
+                            fontWeight: selected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

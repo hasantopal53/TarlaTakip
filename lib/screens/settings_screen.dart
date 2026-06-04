@@ -226,15 +226,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     color: const Color(0xFFE3F2FD),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.cloud_sync,
+                  child: const Icon(Icons.help_outline,
                       color: Color(0xFF1565C0), size: 22),
                 ),
-                title: const Text('API Anahtarları',
+                title: const Text('Kullanım Kılavuzu',
                     style: TextStyle(fontWeight: FontWeight.w500)),
-                subtitle: const Text('WeatherMap & Google Maps'),
+                subtitle: const Text('Nasıl kullanılır?'),
                 trailing: const Icon(Icons.arrow_forward_ios,
                     size: 14, color: Colors.grey),
-                onTap: () => _showApiInfoDialog(context),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Nasıl Kullanılır?'),
+                      content: const Text(
+                          '1. Harita sekmesine giderek tarlalarınızı ekleyin.\n2. Tarlalarınıza uzun basarak detaylı bilgilerini girin.\n3. Hava durumu sekmesinden tarlalarınızın günlük ve haftalık durumunu takip edin.\n4. Maliyetler ve görevler kısmından tarımsal faaliyetlerinizi yönetin.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Anladım'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -321,39 +336,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       default:
         return 'Bilinmiyor';
     }
-  }
-
-  void _showApiInfoDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('API Anahtarları'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('OpenWeatherMap API:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 4),
-            Text('lib/services/weather_service.dart\ndosyasındaki _apiKey değişkenini güncelleyin',
-                style: TextStyle(fontSize: 13, color: Colors.grey)),
-            SizedBox(height: 12),
-            Text('Google Maps API:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 4),
-            Text(
-                'android/app/src/main/AndroidManifest.xml\ndosyasındaki YOUR_GOOGLE_MAPS_API_KEY değerini güncelleyin',
-                style: TextStyle(fontSize: 13, color: Colors.grey)),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
   }
 }
 

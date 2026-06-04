@@ -1,0 +1,167 @@
+================================================================================
+TARLATAKIP - SUNUM PLANI (MCBU sablonu ile kullan)
+================================================================================
+GitHub: https://github.com/hasantopal53/TarlaTakip
+
+Bu dosyayi Notepad ile acabilirsin. Ayni icerik SUNUM_PLANI.md dosyasinda da var.
+
+--------------------------------------------------------------------------------
+SABLON: 8 slayt. 12-15 slayt icin slayt 3, 4 ve 7'yi PowerPoint'te cogalt.
+--------------------------------------------------------------------------------
+
+SS (ekran goruntusu): Emulator -> ekran ac -> Android Studio Camera veya Win+Shift+S
+PowerPoint: Ekle -> Resimler -> slayta surukle
+
+================================================================================
+SLAYT 1 - KAPAK
+================================================================================
+Sunum Basligi: TarlaTakip - Akilli Tarim Asistani
+Kod - Ders: [Ders kodun] - Mobil Programlama
+Numara, Ad-Soyad: [No] - [Ad Soyad]
+Danisman: [Danisman]
+Fakulte: Manisa Celal Bayar Universitesi - [Bolum]
+Yil: 2025-2026
+
+Konusmaci: Flutter ile tarla, hava, maliyet, gorev takibi yapan mobil uygulama.
+
+================================================================================
+SLAYT 2 - ICINDEKILER (sablon: Proje organizasyonu)
+================================================================================
+1. Problem ve cozum
+2. Kullanilan teknolojiler
+3. Uygulama mimarisi
+4. Ekranlar ve arayuz bilesenleri
+5. Hoca isterlerinin karsilanmasi
+6. Harita, bildirim ve API
+7. Canli demo ve sonuc
+8. Kaynak kod (GitHub)
+
+================================================================================
+SLAYT 3 - PROBLEM VE COZUM
+================================================================================
+Baslik: Problem ve cozumumuz
+
+PROBLEM:
+- Tarla, maliyet, gorev ve hava bilgisi daginik.
+- Ciftci icin tek mobil cozum ihtiyaci.
+
+COZUM - TarlaTakip:
+- Haritada tarla, CRUD kayit
+- OpenWeatherMap: hava + 5 gun tahmin, sulama onerisi
+- Maliyet ve gorev; gorev gunu bildirim
+- Veriler telefonda Hive; internetsiz okuma
+
+================================================================================
+SLAYT 4 - TEKNOLOJILER
+================================================================================
+Framework: Flutter (Dart), Material Design 3
+State: Provider
+Yerel veri: Hive
+Harita: google_maps_flutter, geolocator
+Ag: http -> OpenWeatherMap
+Bildirim: flutter_local_notifications
+Android: Gradle (Kotlin DSL)
+Gelistirme: Android Studio, Git/GitHub
+
+================================================================================
+SLAYT 5 - MIMARI (figur slayti)
+================================================================================
+[Kullanici]
+     |
+[Flutter UI - 7 ekran]
+     |
+[Provider]
+     |
++------------------------+-------------------------+
+| Hive (tarla/maliyet/   | OpenWeatherMap API      |
+| gorev)                 | Google Maps + GPS       |
++------------------------+-------------------------+
+
+Sekil 1. TarlaTakip mimarisi
+
+================================================================================
+SLAYT 6-7 - EKRANLAR (BURAYA SS KOY)
+================================================================================
+[SS] Ana sayfa - tarla cipleri, hava, sulama, gorevler
+[SS] Harita - marker, uzun bas
+[SS] Tarlalar - liste/form
+[SS] Maliyet veya Gorev
+[SS] Hava durumu - tahmin sekmesi
+[SS] Ayarlar
+
+================================================================================
+SLAYT 8 - UI BILESENLERI
+================================================================================
+Scaffold, AppBar, SliverAppBar, NavigationBar (5 sekme), Drawer, ListView,
+Card, TextField, FAB, TabBar, ModalBottomSheet, RefreshIndicator, Provider
+
+================================================================================
+SLAYT 9 - HOCA ISTERLERI TABLOSU (sablon slayt 6)
+================================================================================
+1) 5+ ekran (20p) - KARSILANIYOR - 7 ekran: Ana, Harita, Tarlalar,
+   Maliyet, Gorev, Hava, Ayarlar
+
+2) 5+ UI elemani (20p) - KARSILANIYOR - Scaffold, AppBar, NavigationBar,
+   Drawer, ListView, Card, FAB, TabBar, BottomSheet...
+
+3) Harita + bildirim (20p) - KARSILANIYOR - Google Maps, yerel bildirim
+
+4) Servisten veri (20p) - KARSILANIYOR - OpenWeatherMap -> UI
+
+5) Ek ister 2 madde (20p) - Hive+Provider, Konum/GPS, Git/Gradle
+
+Medya oynatici ve makine ogrenmesi YOK (durust soyle).
+
+================================================================================
+SLAYT 10 - HARITA VE BILDIRIM
+================================================================================
+Harita: marker, uzun bas, Konumum (GPS)
+Bildirim: gorev tarihi sabah 08:00, izin ayarlardan
+
+================================================================================
+SLAYT 11 - API
+================================================================================
+REST + JSON -> WeatherService -> WeatherProvider -> kartlar
+Ana sayfa hava = secilen tarlanin koordinati
+
+================================================================================
+SLAYT 12 - HIVE VE PROVIDER
+================================================================================
+Hive: fields, costs, tasks
+Provider: Field, Cost, Task, Weather, Navigation
+Tum ekranlar ayni tarla listesini kullanir
+
+================================================================================
+SLAYT 13 - CANLI DEMO (5-6 dk)
+================================================================================
+1. Emulatorde Run
+2. Ana sayfa Tarla1/Tarla2 sec
+3. Harita marker
+4. Tarlalar bir kayit
+5. Maliyet veya Gorev
+6. Menu -> Hava tahmin
+7. GitHub linki soyle
+
+DEMO ONCESI:
+[ ] 2 tarla koordinatli (Fethiye civari)
+[ ] 1 yakin gorev
+[ ] Internet acik
+[ ] API anahtarlari tamam
+[ ] SS'ler sunumda
+
+================================================================================
+SLAYT 14 - SONUC
+================================================================================
+Sonuc: Tek uygulamada tarla, maliyet, gorev, hava.
+Gelecek: bulut, hesap, grafikler.
+Kisit: medya/ML/rehber yok.
+
+================================================================================
+SLAYT 15 - KAYNAKCA
+================================================================================
+[1] https://github.com/hasantopal53/TarlaTakip
+[2] https://docs.flutter.dev
+[3] https://openweathermap.org/api
+[4] https://developers.google.com/maps
+
+================================================================================

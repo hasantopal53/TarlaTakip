@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 // OpenWeatherMap ücretsiz API key - https://openweathermap.org/api adresinden alın
-const String _apiKey = 'OPENWEATHER_API_KEY';
+const String _apiKey = '1aee16675294f3fa660960876400bd98';
 const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
 
 class CurrentWeather {
@@ -96,6 +96,17 @@ class WeatherService {
           json.decode(response.body) as Map<String, dynamic>);
     }
     throw Exception('Hava durumu alınamadı: ${response.statusCode}');
+  }
+
+  static Future<CurrentWeather> getWeatherByCity(String city) async {
+    final url =
+        '$_baseUrl/weather?q=$city&appid=$_apiKey&units=metric&lang=tr';
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      return CurrentWeather.fromJson(
+          json.decode(response.body) as Map<String, dynamic>);
+    }
+    throw Exception('Şehir bulunamadı: $city');
   }
 
   static Future<List<WeatherForecast>> getForecast(

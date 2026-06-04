@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/weather_provider.dart';
+import '../providers/field_provider.dart';
 import '../services/weather_service.dart';
+import '../models/field_model.dart';
 
 class WeatherScreen extends StatefulWidget {
   const WeatherScreen({super.key});
@@ -14,15 +17,24 @@ class WeatherScreen extends StatefulWidget {
 class _WeatherScreenState extends State<WeatherScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<WeatherProvider>();
-      if (provider.status == WeatherStatus.initial) {
-        provider.loadWeather();
+      final weatherProvider = context.read<WeatherProvider>();
+      final fieldProvider = context.read<FieldProvider>();
+      
+      if (weatherProvider.status == WeatherStatus.initial) {
+        weatherProvider.loadWeatherForHome(fieldProvider.fields);
+      }
+      
+      // Tarlalar için hava durumunu arka planda yükle
+      if (fieldProvider.fields.isNotEmpty) {
+        weatherProvider.loadWeatherForFields(fieldProvider.fields);
       }
     });
   }
@@ -30,7 +42,18 @@ class _WeatherScreenState extends State<WeatherScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _handleSearch() {
+    if (_searchController.text.trim().isNotEmpty) {
+      context
+          .read<WeatherProvider>()
+          .loadWeatherByCity(_searchController.text.trim());
+      setState(() => _isSearching = false);
+      _searchController.clear();
+    }
   }
 
   @override
@@ -38,14 +61,36 @@ class _WeatherScreenState extends State<WeatherScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F5),
       appBar: AppBar(
-        title: const Text('Hava Durumu'),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Şehir ara (Örn: Konya)',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  border: InputBorder.none,
+                ),
+                onSubmitted: (_) => _handleSearch(),
+                autofocus: true,
+              )
+            : const Text('Hava Durumu'),
         backgroundColor: const Color(0xFF1565C0),
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() => _isSearching = !_isSearching);
+              if (!_isSearching) _searchController.clear();
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<WeatherProvider>().loadWeather(),
+            onPressed: () {
+              final fields = context.read<FieldProvider>().fields;
+              context.read<WeatherProvider>().loadWeatherForHome(fields);
+            },
           ),
         ],
         bottom: TabBar(
@@ -69,7 +114,10 @@ class _WeatherScreenState extends State<WeatherScreen>
           if (provider.status == WeatherStatus.error) {
             return _ErrorView(
               message: provider.errorMessage,
-              onRetry: provider.loadWeather,
+              onRetry: () {
+                final fields = context.read<FieldProvider>().fields;
+                provider.loadWeatherForHome(fields);
+              },
             );
           }
           if (provider.currentWeather == null) {
@@ -89,6 +137,14 @@ class _WeatherScreenState extends State<WeatherScreen>
   }
 }
 
+String _weatherTitle(List<Field> fields, String? selectedId, String cityName) {
+  if (selectedId == null) return cityName;
+  for (final f in fields) {
+    if (f.id == selectedId) return '${f.name} - $cityName';
+  }
+  return cityName;
+}
+
 class _CurrentWeatherTab extends StatelessWidget {
   final CurrentWeather weather;
 
@@ -96,10 +152,111 @@ class _CurrentWeatherTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final fields = context.watch<FieldProvider>().fields;
+    final weatherProvider = context.watch<WeatherProvider>();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (fields.isNotEmpty) ...[
+            const Text(
+              'Tarlalarınızın Hava Durumu',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 100,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: fields.length,
+                itemBuilder: (context, index) {
+                  final field = fields[index];
+                  final isSelected = weatherProvider.selectedFieldId == field.id;
+                  final fieldWeather = weatherProvider.fieldWeather[field.id];
+
+                  return GestureDetector(
+                    onTap: () => context.read<WeatherProvider>().selectFieldWeather(field),
+                    child: Container(
+                      width: 120,
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF1565C0) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? const Color(0xFF1565C0) : Colors.grey.shade300,
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            field.name,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          if (fieldWeather != null) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CachedNetworkImage(
+                                  imageUrl: fieldWeather.iconUrl,
+                                  width: 30,
+                                  height: 30,
+                                  placeholder: (context, url) => const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 1)),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.wb_cloudy,
+                                          size: 20, color: Colors.blueGrey),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${fieldWeather.temperature.toStringAsFixed(0)}°C',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : const Color(0xFF1565C0),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ] else
+                            const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+          
           // Ana hava kartı
           Container(
             width: double.infinity,
@@ -115,21 +272,29 @@ class _CurrentWeatherTab extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  weather.cityName,
+                  _weatherTitle(
+                      fields, weatherProvider.selectedFieldId, weather.cityName),
                   style: const TextStyle(
-                      color: Colors.white70, fontSize: 18),
+                      color: Colors.white, fontSize: 18, fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.network(
-                      weather.iconUrl,
-                      width: 80,
-                      height: 80,
-                      errorBuilder: (_, __, ___) => const Icon(
+                    CachedNetworkImage(
+                      imageUrl: weather.iconUrl,
+                      width: 100,
+                      height: 100,
+                      placeholder: (context, url) => const SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: Center(
+                            child: CircularProgressIndicator(color: Colors.white)),
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
                           Icons.wb_cloudy,
-                          size: 60,
+                          size: 80,
                           color: Colors.white),
                     ),
                     const SizedBox(width: 8),
@@ -332,12 +497,17 @@ class _ForecastTab extends StatelessWidget {
                     ],
                   ),
                 ),
-                Image.network(
-                  day.iconUrl,
-                  width: 40,
-                  height: 40,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.cloud, size: 36),
+                CachedNetworkImage(
+                  imageUrl: day.iconUrl,
+                  width: 45,
+                  height: 45,
+                  placeholder: (context, url) => const SizedBox(
+                      width: 45,
+                      height: 45,
+                      child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2))),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.cloud, size: 36, color: Colors.grey),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -433,7 +603,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'API anahtarınızın doğru olduğundan emin olun.',
+              'Konum alınamadı veya şehir bulunamadı. Lütfen arama özelliğini kullanın veya GPS\'inizi kontrol edin.',
               style: const TextStyle(color: Colors.grey),
               textAlign: TextAlign.center,
             ),

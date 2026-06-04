@@ -24,7 +24,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLocation();
+    // Başlangıçta konuma gitme kapalı -> Türkiye'den başlar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateMarkers();
     });
@@ -117,14 +117,9 @@ class _MapScreenState extends State<MapScreen> {
               GoogleMap(
                 onMapCreated: (controller) {
                   _mapController = controller;
-                  if (_locationLoaded) {
-                    controller.animateCamera(
-                      CameraUpdate.newLatLngZoom(_currentPosition, 14),
-                    );
-                  }
                 },
                 initialCameraPosition: CameraPosition(
-                  target: _currentPosition,
+                  target: _defaultLocation,
                   zoom: 12,
                 ),
                 markers: _markers,
@@ -146,7 +141,7 @@ class _MapScreenState extends State<MapScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -169,6 +164,7 @@ class _MapScreenState extends State<MapScreen> {
           );
         },
       ),
+      // Buton SOLDA duracak şekilde ayarlandı
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'map_fab',
         onPressed: _loadLocation,
@@ -177,6 +173,7 @@ class _MapScreenState extends State<MapScreen> {
         label: const Text('Konumum',
             style: TextStyle(color: Colors.white)),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
     );
   }
 }
