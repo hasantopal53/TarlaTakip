@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../api_keys.dart';
+import '../local_config.dart';
 
-// OpenWeatherMap: https://openweathermap.org/api — anahtar lib/api_keys.dart içinde
+// Hava servisi: https://openweathermap.org/api
 const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
 
 class CurrentWeather {
@@ -97,7 +97,7 @@ class WeatherService {
   static Future<CurrentWeather> getCurrentWeather(
       double lat, double lon) async {
     final url =
-        '$_baseUrl/weather?lat=$lat&lon=$lon&appid=$openWeatherApiKey&units=metric&lang=tr';
+        '$_baseUrl/weather?lat=$lat&lon=$lon&appid=$weatherServiceId&units=metric&lang=tr';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       return CurrentWeather.fromJson(
@@ -108,7 +108,7 @@ class WeatherService {
 
   static Future<CurrentWeather> getWeatherByCity(String city) async {
     final url =
-        '$_baseUrl/weather?q=$city&appid=$openWeatherApiKey&units=metric&lang=tr';
+        '$_baseUrl/weather?q=$city&appid=$weatherServiceId&units=metric&lang=tr';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       return CurrentWeather.fromJson(
@@ -120,7 +120,7 @@ class WeatherService {
   static Future<List<WeatherForecast>> getForecast(
       double lat, double lon) async {
     final url =
-        '$_baseUrl/forecast?lat=$lat&lon=$lon&appid=$openWeatherApiKey&units=metric&lang=tr';
+        '$_baseUrl/forecast?lat=$lat&lon=$lon&appid=$weatherServiceId&units=metric&lang=tr';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode != 200) {
       throw Exception('Tahmin alınamadı: ${response.statusCode}');

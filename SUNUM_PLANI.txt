@@ -146,7 +146,7 @@ DEMO ONCESI:
 [ ] 2 tarla koordinatli (Fethiye civari)
 [ ] 1 yakin gorev
 [ ] Internet acik
-[ ] API anahtarlari tamam
+[ ] Harici servis ayarlari tamam
 [ ] SS'ler sunumda
 
 ================================================================================

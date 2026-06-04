@@ -39,8 +39,8 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Yerel API anahtarlari (GitHub'a gitmesin)
-lib/api_keys.dart
+# Yerel gelistirme ayarlari
+lib/local_config.dart
 temp_*.json
 
 # Android Studio will place build artifacts here

@@ -226,7 +226,7 @@ Scaffold, AppBar / SliverAppBar, NavigationBar (5 sekme), Drawer, ListView, Card
 - [ ] En az 2 tarla koordinatlı (ör. Fethiye civarı) — Tarla1, Tarla2  
 - [ ] En az 1 yaklaşan görev (bildirim göstermek için)  
 - [ ] Emülatörde internet açık  
-- [ ] OpenWeatherMap ve Maps API anahtarları yapılandırılmış  
+- [ ] Harici servis bağlantıları (hava, harita) yapılandırılmış  
 - [ ] SS’ler sunuma eklenmiş  
 
 ---
@@ -239,7 +239,7 @@ Scaffold, AppBar / SliverAppBar, NavigationBar (5 sekme), Drawer, ListView, Card
 
 **Gelecek (opsiyonel slayt):** Bulut senkron, kullanıcı hesabı, hasat verimi grafikleri, cihaz takvimi entegrasyonu.
 
-**Kısıtlar (dürüst):** Medya oynatıcı yok; ML yok; rehber API yok; API anahtarları geliştirme ortamında.
+**Kısıtlar (dürüst):** Medya oynatıcı yok; ML yok; rehber API yok; harici servis ayarları geliştirme ortamında.
 
 ---
 

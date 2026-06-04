@@ -39,9 +39,9 @@
     ```bash
     flutter pub get
     ```
-3.  **API Configuration:**
-    * Add your own API key to the `YOUR_GOOGLE_MAPS_API_KEY` field in `android/app/src/main/AndroidManifest.xml`.
-    * Define your API key in the `YOUR_OPENWEATHERMAP_API_KEY` field within the weather service file.
+3.  **Project setup:**
+    * Copy `lib/local_config.example.dart` to `lib/local_config.dart` and set your values.
+    * Set `MAPS_SERVICE_ID` in `android/app/src/main/AndroidManifest.xml` for map support.
 4.  **Run the App:**
     ```bash
     flutter run
@@ -93,9 +93,9 @@ This project is licensed under the **MIT License**.
     ```bash
     flutter pub get
     ```
-3.  **API Yapılandırması:**
-    * `android/app/src/main/AndroidManifest.xml` dosyasındaki `YOUR_GOOGLE_MAPS_API_KEY` alanına kendi anahtarınızı ekleyin.
-    * Hava durumu servisi dosyasındaki `YOUR_OPENWEATHERMAP_API_KEY` alanına kendi API anahtarınızı tanımlayın.
+3.  **Proje kurulumu:**
+    * `lib/local_config.example.dart` dosyasını `lib/local_config.dart` olarak kopyalayıp değerleri doldurun.
+    * Harita için `android/app/src/main/AndroidManifest.xml` içindeki `MAPS_SERVICE_ID` alanını güncelleyin.
 4.  **Çalıştırın:**
     ```bash
     flutter run
