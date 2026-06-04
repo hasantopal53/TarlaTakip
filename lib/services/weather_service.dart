@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// OpenWeatherMap ücretsiz API key - https://openweathermap.org/api adresinden alın
-const String _apiKey = '1aee16675294f3fa660960876400bd98';
+import '../api_keys.dart';
+
+// OpenWeatherMap: https://openweathermap.org/api — anahtar lib/api_keys.dart içinde
 const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
 
 class CurrentWeather {
@@ -15,6 +16,8 @@ class CurrentWeather {
   final String cityName;
   final double tempMin;
   final double tempMax;
+  final double? lat;
+  final double? lon;
 
   CurrentWeather({
     required this.temperature,
@@ -26,9 +29,12 @@ class CurrentWeather {
     required this.cityName,
     required this.tempMin,
     required this.tempMax,
+    this.lat,
+    this.lon,
   });
 
   factory CurrentWeather.fromJson(Map<String, dynamic> json) {
+    final coord = json['coord'] as Map<String, dynamic>?;
     return CurrentWeather(
       temperature: (json['main']['temp'] as num).toDouble(),
       feelsLike: (json['main']['feels_like'] as num).toDouble(),
@@ -39,6 +45,8 @@ class CurrentWeather {
       cityName: json['name'] as String,
       tempMin: (json['main']['temp_min'] as num).toDouble(),
       tempMax: (json['main']['temp_max'] as num).toDouble(),
+      lat: coord != null ? (coord['lat'] as num).toDouble() : null,
+      lon: coord != null ? (coord['lon'] as num).toDouble() : null,
     );
   }
 
@@ -89,7 +97,7 @@ class WeatherService {
   static Future<CurrentWeather> getCurrentWeather(
       double lat, double lon) async {
     final url =
-        '$_baseUrl/weather?lat=$lat&lon=$lon&appid=$_apiKey&units=metric&lang=tr';
+        '$_baseUrl/weather?lat=$lat&lon=$lon&appid=$openWeatherApiKey&units=metric&lang=tr';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       return CurrentWeather.fromJson(
@@ -100,7 +108,7 @@ class WeatherService {
 
   static Future<CurrentWeather> getWeatherByCity(String city) async {
     final url =
-        '$_baseUrl/weather?q=$city&appid=$_apiKey&units=metric&lang=tr';
+        '$_baseUrl/weather?q=$city&appid=$openWeatherApiKey&units=metric&lang=tr';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode == 200) {
       return CurrentWeather.fromJson(
@@ -112,7 +120,7 @@ class WeatherService {
   static Future<List<WeatherForecast>> getForecast(
       double lat, double lon) async {
     final url =
-        '$_baseUrl/forecast?lat=$lat&lon=$lon&appid=$_apiKey&units=metric&lang=tr';
+        '$_baseUrl/forecast?lat=$lat&lon=$lon&appid=$openWeatherApiKey&units=metric&lang=tr';
     final response = await http.get(Uri.parse(url));
     if (response.statusCode != 200) {
       throw Exception('Tahmin alınamadı: ${response.statusCode}');

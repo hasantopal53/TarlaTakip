@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../services/weather_service.dart';
 import '../models/field_model.dart';
 
@@ -142,13 +140,9 @@ class WeatherProvider extends ChangeNotifier {
     try {
       final current = await WeatherService.getWeatherByCity(city);
       _currentWeather = current;
-      // Mevcut koordinatları güncelle
-      final response = await http.get(Uri.parse(
-          'https://api.openweathermap.org/data/2.5/weather?q=$city&appid=1aee16675294f3fa660960876400bd98'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        _lat = (data['coord']['lat'] as num).toDouble();
-        _lon = (data['coord']['lon'] as num).toDouble();
+      if (current.lat != null && current.lon != null) {
+        _lat = current.lat!;
+        _lon = current.lon!;
       }
 
       _forecast = await WeatherService.getForecast(_lat, _lon);
